@@ -13,7 +13,8 @@ using namespace std;
 
 struct point {
     double xp,  q2,  beta, xpSig;
-    vector<double> errs;//14 items
+    double errStat, errSys, errTot, errUnc;
+    vector<double> errs;//10 items
 };
 
 
@@ -32,7 +33,8 @@ struct dFitter {
         point p;
         while(1) {
             dfile >> p.xp >> p.q2 >> p.beta >> p.xpSig;
-            p.errs.resize(14);
+            dfile >> p.errStat >> p.errSys >> p.errTot >> p.errUnc;
+            p.errs.resize(10);
             for(auto &err : p.errs)
                 dfile >> err;
 
@@ -64,15 +66,34 @@ struct dFitter {
     //Formula (33), page 29
     double getChi2()
     {
-        int s = 0;
+        //Calculate the optimal shifts
+        vector<double> s;
         for(auto p : data) {
             double mx = sqrt(p.q2 * (1/p.beta - 1));
             if(!(p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2))
                 continue;
 
-            ++s;
+            for(int i = 0; i < p.errs.size(); ++i)
+                s[i] = -p.errs[i];
         }
-        cout << s << endl;
+
+        //Evaluate the chi2
+        double chi2 = 0;
+        for(auto p : data) {
+            double mx = sqrt(p.q2 * (1/p.beta - 1));
+            if(!(p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2))
+                continue;
+
+            double th = 0;//TODO put theory
+            double corErr = 0;
+            for(int i = 0; i < s.size(); ++i)
+                corErr += s[i] * p.errs[i];
+
+            chi2 += pow(p.xpSig - th * (1 - corErr), 2) / (pow(p.errStat,2) + pow(p.errUnc,2) ) ;
+            chi2 += pow(s[i],2);
+        }
+        return chi2;
+
     }
 };
 
