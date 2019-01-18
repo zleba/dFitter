@@ -3,3 +3,5 @@ qcdnum*
 *~
 dfitter
 *.o
+PlottingHelper
+*.swp

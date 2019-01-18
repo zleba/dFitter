@@ -7,6 +7,8 @@
 #include "QCDNUM/QCDNUM.h"
 
 #include "pdf.h"
+#include "dfitter.h"
+#include "dplotter.h"
 
 
 #include "TMatrixD.h"
@@ -15,12 +17,6 @@
 
 using namespace std;
 
-struct point {
-    double xp,  q2,  beta, xpSig;
-    double th;
-    double errStat, errSys, errTot, errUnc;
-    vector<double> errs;//10 items
-};
 
 
 
@@ -163,7 +159,7 @@ struct dFitter {
     {
         //Fill theory
         for(auto &p : data) {
-            if(!Cut(p)) continue;
+           // if(!Cut(p)) continue;
             p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
         }
 
@@ -226,10 +222,29 @@ int main()
 {
     dFitter dfit;
     dfit.loadData();
-    dfit.checkSigma();
 
     double chi2  = dfit.getChi2();
+
+    dPlotter dplot;
+    dplot.data = dfit.data;
+    dplot.plotBeta(0.0003);
+    dplot.plotBeta(0.001);
+    dplot.plotBeta(0.003);
+    dplot.plotBeta(0.01);
+    dplot.plotBeta(0.03);
+
+    //cout << chi2/(190-6) << endl;
+    return 0;
+
+
+    dfit.checkSigma();
+
     double chi2s = dfit.getChi2Simply();
+
+
+
+
+
     int ndf = 190 - 6;
     cout << "My chi2 /ndf = " <<  chi2   << " / "<< ndf<<" = " << chi2/ndf << endl;
     cout << "My chi2s/ndf = " <<  chi2s  << " / "<< ndf<<" = " << chi2s/ndf << endl;

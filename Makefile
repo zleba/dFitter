@@ -1,4 +1,4 @@
-SRC = src/dfitter.cpp src/pdf.cpp
+SRC = src/dfitter.cpp src/pdf.cpp src/dplotter.cpp
 
 #Convert src to obj
 OBJtmp = $(subst src,obj,${SRC})
@@ -11,8 +11,8 @@ fitBobj = h1FitB/h12006flux.o h1FitB/qcd_2006.o h1FitB/i_2006_fitb.o h1FitB/i_20
 ROOTCFLAGS = $(shell root-config --cflags)
 ROOTLIBS   = $(shell root-config --libs)
 
-INC = ${ROOTCFLAGS} -Iinc -Iqcdnum/include
-LIBS=-Lqcdnum/lib -lQCDNUM  -Wl,-rpath=qcdnum/lib  -lgfortran  ${ROOTLIBS}
+INC = ${ROOTCFLAGS} -Iinc -Iqcdnum/include -IPlottingHelper
+LIBS=-Lqcdnum/lib -lQCDNUM  -Wl,-rpath=qcdnum/lib  -lgfortran  ${ROOTLIBS}  -Wl,-rpath,PlottingHelper -LPlottingHelper -lPlottingHelper
 
 
 

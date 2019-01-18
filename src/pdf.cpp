@@ -28,6 +28,7 @@ double func(int* ipdf, double* x) {
 
 void PDF::evolve()
 {
+    //lamda QCD = 0.399(37) GeV  | http://www-h1.desy.de/psfiles/papers/desy06-049.pdf (page 18)
     int    ityp = 1, iord = 2, nfin = 3;                //unpol, NLO, VFNS
     double as0 = 0.364, r20 = 2.0;                          //input alphas
     double xmin[] = {1.e-3};                                      //x-grid
@@ -133,11 +134,14 @@ std::pair<double,double> PDF::evalFitB(double z, double q2) const
 double PDF::evalFitBred(double xpom, double z, double q2) const
 {
     //Get F2 and FL
-    int ifit = 2;
+    int ifit = 1;//FitA
     double xPq[13];
     double f2, fl, c2, cl;
     qcd_2006_(&z,&q2, &ifit, xPq, &f2, &fl, &c2, &cl);
 
+    //f2 = 2*(2*1./9 + 1.5*4./9) * xPq[7];
+    //fl = 0;
+    //cout << "Radek " <<z<<" "<< q2 <<" | "<<  2*(2*1./9 + 4./9) * xPq[7] <<" "<< f2 << endl;
 
     //Multiply by flux
     double t = -1, flux;
@@ -145,6 +149,8 @@ double PDF::evalFitBred(double xpom, double z, double q2) const
     h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &flux);
     f2 *= flux;
     fl *= flux;
+    c2 *= flux;
+    cl *= flux;
 
 
     //Get the reduced xSec
@@ -157,7 +163,7 @@ double PDF::evalFitBred(double xpom, double z, double q2) const
     double x = z*xpom;
     double y = q2/(s-mp2)/x;
 
-    double sRed = f2 - y*y/(1 + pow(1-y,2)) * fl;
+    double sRed = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
     return xpom*sRed;
-    return sRed;
+   // return sRed;
 }
