@@ -9,10 +9,15 @@
 #include "pdf.h"
 
 
+#include "TMatrixD.h"
+#include "TVectorD.h"
+#include "TDecompSVD.h"
+
 using namespace std;
 
 struct point {
     double xp,  q2,  beta, xpSig;
+    double th;
     double errStat, errSys, errTot, errUnc;
     vector<double> errs;//10 items
 };
@@ -62,20 +67,48 @@ struct dFitter {
         int nrows = ceil(points.size() / (ncols+0.));
     }
 
+
     //Calculated according to https://arxiv.org/pdf/hep-ex/0012053.pdf
     //Formula (33), page 29
     double getChi2()
     {
+        //Fill theory
+        for(auto p : data) {
+
+
+
+        }
+
+
+        int nErr = data[0].errs.size();
+        TMatrixD mat(nErr, nErr);
+        TVectorD yVec(nErr);
         //Calculate the optimal shifts
-        vector<double> s;
         for(auto p : data) {
             double mx = sqrt(p.q2 * (1/p.beta - 1));
             if(!(p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2))
                 continue;
 
-            for(int i = 0; i < p.errs.size(); ++i)
-                s[i] = -p.errs[i];
+            double th = p.th;//TODO put theory
+            double C = pow(p.errStat,2) + pow(p.errUnc,2);
+            for(int j = 0; j < p.errs.size(); ++j) 
+            for(int k = 0; k < p.errs.size(); ++k) 
+                mat(j,k) += 1./C * th*th * p.errs[j]*p.errs[k];
+            
+            for(int j = 0; j < p.errs.size(); ++j)
+                yVec(j) += - 1./C * (p.xpSig - th) * th * p.errs[j];
+
         }
+
+        for(int j = 0; j < data[0].errs.size(); ++j)
+            mat(j,j) += 1;
+
+        //Solve 
+        TDecompSVD svd(mat);
+        Bool_t ok;
+        const TVectorD s = svd.Solve(yVec, ok);
+
+
 
         //Evaluate the chi2
         double chi2 = 0;
@@ -84,14 +117,17 @@ struct dFitter {
             if(!(p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2))
                 continue;
 
-            double th = 0;//TODO put theory
+            double th = p.th;//TODO put theory
             double corErr = 0;
-            for(int i = 0; i < s.size(); ++i)
-                corErr += s[i] * p.errs[i];
+            for(int i = 0; i < p.errs.size(); ++i)
+                corErr += s(i) * p.errs[i];
 
             chi2 += pow(p.xpSig - th * (1 - corErr), 2) / (pow(p.errStat,2) + pow(p.errUnc,2) ) ;
-            chi2 += pow(s[i],2);
         }
+
+        for(int j = 0; j < data[0].errs.size(); ++j)
+            chi2 += pow(s(j),2);
+
         return chi2;
 
     }

@@ -1,5 +1,4 @@
 SRC = src/dfitter.cpp src/pdf.cpp
-INC = -Iinc -Iqcdnum/include
 
 #Convert src to obj
 OBJtmp = $(subst src,obj,${SRC})
@@ -7,7 +6,15 @@ OBJ   = $(subst cpp,o,${OBJtmp})
 
 fitBobj = h1FitB/h12006flux.o h1FitB/qcd_2006.o h1FitB/i_2006_fitb.o h1FitB/i_2006_fita.o 
 
-LIBS=-Lqcdnum/lib -lQCDNUM  -Wl,-rpath=qcdnum/lib  -lgfortran
+
+#ROOT includes + libraries
+ROOTCFLAGS = $(shell root-config --cflags)
+ROOTLIBS   = $(shell root-config --libs)
+
+INC = ${ROOTCFLAGS} -Iinc -Iqcdnum/include
+LIBS=-Lqcdnum/lib -lQCDNUM  -Wl,-rpath=qcdnum/lib  -lgfortran  ${ROOTLIBS}
+
+
 
 dfitter: ${OBJ} ${fitBobj}
 	g++  $^ ${LIBS}  -o $@
