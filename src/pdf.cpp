@@ -118,6 +118,7 @@ void PDF::initConv()
 
 extern "C" {
     void qcd_2006_(double *z,double *q2, int *ifit, double *xPq, double *f2, double *fl, double *c2, double *cl);
+    void h12006flux_(double *xpom, double *t, int *Int, int *ifit, int *ipom, double *flux);
 }
 
 std::pair<double,double> PDF::evalFitB(double z, double q2) const
@@ -131,10 +132,22 @@ std::pair<double,double> PDF::evalFitB(double z, double q2) const
 
 double PDF::evalFitBred(double xpom, double z, double q2) const
 {
+    //Get F2 and FL
     int ifit = 2;
     double xPq[13];
     double f2, fl, c2, cl;
     qcd_2006_(&z,&q2, &ifit, xPq, &f2, &fl, &c2, &cl);
+
+
+    //Multiply by flux
+    double t = -1, flux;
+    int Int = 1, ipom = 1;
+    h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &flux);
+    f2 *= flux;
+    fl *= flux;
+
+
+    //Get the reduced xSec
 
     const double mp2 = pow(0.92, 2);
     double Ep = (q2 < 120) ? 820 : 920;
@@ -145,5 +158,6 @@ double PDF::evalFitBred(double xpom, double z, double q2) const
     double y = q2/(s-mp2)/x;
 
     double sRed = f2 - y*y/(1 + pow(1-y,2)) * fl;
+    return xpom*sRed;
     return sRed;
 }

@@ -43,6 +43,15 @@ struct dFitter {
             for(auto &err : p.errs)
                 dfile >> err;
 
+            //from % to the rel change
+            p.errStat /= 100;
+            p.errSys /= 100;
+            p.errTot /= 100;
+            p.errUnc /= 100;
+            for(auto &err : p.errs)
+                err /= 100;
+
+
             if(!dfile.good()) break;
             data.push_back(p);
         }
@@ -72,11 +81,16 @@ struct dFitter {
     //Formula (33), page 29
     double getChi2()
     {
+        auto Cut = [](const point &p) {
+            double mx = sqrt(p.q2 * (1/p.beta - 1));
+            return (p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2 );
+        };
+
+
         //Fill theory
-        for(auto p : data) {
-
-
-
+        for(auto &p : data) {
+            if(!Cut(p)) continue;
+            p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
         }
 
 
@@ -84,13 +98,11 @@ struct dFitter {
         TMatrixD mat(nErr, nErr);
         TVectorD yVec(nErr);
         //Calculate the optimal shifts
-        for(auto p : data) {
-            double mx = sqrt(p.q2 * (1/p.beta - 1));
-            if(!(p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2))
-                continue;
+        for(const auto &p : data) {
+            if(!Cut(p)) continue;
 
             double th = p.th;//TODO put theory
-            double C = pow(p.errStat,2) + pow(p.errUnc,2);
+            double C = pow(p.xpSig*p.errStat,2) + pow(p.xpSig*p.errUnc,2);
             for(int j = 0; j < p.errs.size(); ++j) 
             for(int k = 0; k < p.errs.size(); ++k) 
                 mat(j,k) += 1./C * th*th * p.errs[j]*p.errs[k];
@@ -109,20 +121,18 @@ struct dFitter {
         const TVectorD s = svd.Solve(yVec, ok);
 
 
-
         //Evaluate the chi2
         double chi2 = 0;
-        for(auto p : data) {
-            double mx = sqrt(p.q2 * (1/p.beta - 1));
-            if(!(p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2))
-                continue;
+        for(const auto &p : data) {
+            if(!Cut(p)) continue;
 
             double th = p.th;//TODO put theory
             double corErr = 0;
             for(int i = 0; i < p.errs.size(); ++i)
                 corErr += s(i) * p.errs[i];
 
-            chi2 += pow(p.xpSig - th * (1 - corErr), 2) / (pow(p.errStat,2) + pow(p.errUnc,2) ) ;
+            double C = pow(p.xpSig*p.errStat,2) + pow(p.xpSig*p.errUnc,2);
+            chi2 += pow(p.xpSig - th * (1 - corErr), 2) / C;
         }
 
         for(int j = 0; j < data[0].errs.size(); ++j)
@@ -131,15 +141,51 @@ struct dFitter {
         return chi2;
 
     }
+
+    //Simple naive one
+    double getChi2Simply()
+    {
+        auto Cut = [](const point &p) {
+            double mx = sqrt(p.q2 * (1/p.beta - 1));
+            return (p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2 );
+        };
+
+        //Fill theory
+        for(auto &p : data) {
+            if(!Cut(p)) continue;
+            p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
+        }
+
+        //Evaluate the chi2
+        double chi2 = 0;
+        for(const auto &p : data) {
+            if(!Cut(p)) continue;
+
+            double C = pow(p.xpSig*p.errTot,2);
+            chi2 += pow(p.xpSig - p.th, 2) / C;
+        }
+
+        return chi2;
+
+    }
+
+
+
 };
 
 
+//DESY paper http://www-h1.desy.de/psfiles/papers/desy06-049.pdf
 
 int main()
 {
     dFitter dfit;
     dfit.loadData();
     dfit.checkSigma();
-    dfit.getChi2();
+
+    double chi2  = dfit.getChi2();
+    double chi2s = dfit.getChi2Simply();
+    int ndf = 190 - 6;
+    cout << "My chi2 /ndf = " <<  chi2   << " / "<< ndf<<" = " << chi2/ndf << endl;
+    cout << "My chi2s/ndf = " <<  chi2s  << " / "<< ndf<<" = " << chi2s/ndf << endl;
     return 0;
 }
