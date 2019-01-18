@@ -39,9 +39,30 @@ struct dFitter {
         while(1) {
             dfile >> p.xp >> p.q2 >> p.beta >> p.xpSig;
             dfile >> p.errStat >> p.errSys >> p.errTot >> p.errUnc;
-            p.errs.resize(10);
-            for(auto &err : p.errs)
-                dfile >> err;
+
+            p.errs.resize(3*(10+1), 0.0);
+
+            //Adding normalization errs
+            int sh;
+            if(3 < p.q2  && p.q2 < 13.5) {//1997 820GeV MB
+                sh = 0*11;
+                p.errs[sh] = 5.8 + 1.5 + 1.0;
+
+            }
+            else if(13.5 < p.q2 && p.q2 < 105) {//1997 820GeV
+                sh = 1*11;
+                p.errs[sh] = 5.8 + 1.5 + 1.0;
+            }
+            else if(133 < p.q2) {//1999-2000 920GeV
+                sh = 2*11;
+                p.errs[sh] = 7.4 + 1.5 + 1.0;
+            }
+            else
+                assert(0);
+                
+            //Adding err shifts
+            for(int i = 1; i <= 10; ++i)
+                dfile >> p.errs[sh+i];
 
             //from % to the rel change
             p.errStat /= 100;
@@ -76,24 +97,15 @@ struct dFitter {
         int nrows = ceil(points.size() / (ncols+0.));
     }
 
-
-    //Calculated according to https://arxiv.org/pdf/hep-ex/0012053.pdf
-    //Formula (33), page 29
-    double getChi2()
+    static bool Cut (const point &p)
     {
-        auto Cut = [](const point &p) {
-            double mx = sqrt(p.q2 * (1/p.beta - 1));
-            return (p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2 );
-        };
+        double mx = sqrt(p.q2 * (1/p.beta - 1));
+        return (p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2 );
+    }
 
 
-        //Fill theory
-        for(auto &p : data) {
-            if(!Cut(p)) continue;
-            p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
-        }
-
-
+    TVectorD getShifts()
+    {
         int nErr = data[0].errs.size();
         TMatrixD mat(nErr, nErr);
         TVectorD yVec(nErr);
@@ -101,7 +113,7 @@ struct dFitter {
         for(const auto &p : data) {
             if(!Cut(p)) continue;
 
-            double th = p.th;//TODO put theory
+            double th = p.th;
             double C = pow(p.xpSig*p.errStat,2) + pow(p.xpSig*p.errUnc,2);
             for(int j = 0; j < p.errs.size(); ++j) 
             for(int k = 0; k < p.errs.size(); ++k) 
@@ -118,15 +130,19 @@ struct dFitter {
         //Solve 
         TDecompSVD svd(mat);
         Bool_t ok;
-        const TVectorD s = svd.Solve(yVec, ok);
+        const TVectorD sh = svd.Solve(yVec, ok);
 
+        return sh;
+    }
 
+    double getChi2(const TVectorD &s)
+    {
         //Evaluate the chi2
         double chi2 = 0;
         for(const auto &p : data) {
             if(!Cut(p)) continue;
 
-            double th = p.th;//TODO put theory
+            double th = p.th;
             double corErr = 0;
             for(int i = 0; i < p.errs.size(); ++i)
                 corErr += s(i) * p.errs[i];
@@ -139,7 +155,39 @@ struct dFitter {
             chi2 += pow(s(j),2);
 
         return chi2;
+    }
 
+    //Calculated according to https://arxiv.org/pdf/hep-ex/0012053.pdf
+    //Formula (33), page 29
+    double getChi2()
+    {
+        //Fill theory
+        for(auto &p : data) {
+            if(!Cut(p)) continue;
+            p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
+        }
+
+        TVectorD s = getShifts();
+        double chi2 = getChi2(s);
+
+        /*
+        //Check of the minima
+        for(int i = 0; i < 100000; ++i) {
+            TVectorD sNow = s;
+            for(int j = 0; j < s.GetNrows(); ++j)
+                sNow(j) += rand() /(RAND_MAX+0.) * 0.02;
+                
+            if(getChi2(sNow) - chi2 < 0) {
+                cout << "Problem " << endl;
+                assert(0);
+            }
+        }
+        */
+
+        //print shifts
+        for(int i = 0; i < data[0].errs.size(); ++i)
+            cout <<"shift " <<  i <<" "<<  s(i) << endl;
+        return chi2;
     }
 
     //Simple naive one
@@ -168,8 +216,6 @@ struct dFitter {
         return chi2;
 
     }
-
-
 
 };
 
