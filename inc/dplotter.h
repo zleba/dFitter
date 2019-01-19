@@ -8,6 +8,8 @@ struct dPlotter {
     std::vector<point> data;
 
     void plotBeta(double xpom);
+    void plotQ2(double xpom);
+    void plotXpom();
 };
 
 #endif

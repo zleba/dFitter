@@ -233,6 +233,17 @@ int main()
     dplot.plotBeta(0.01);
     dplot.plotBeta(0.03);
 
+    /*
+    dplot.plotQ2(0.0003);
+    dplot.plotQ2(0.001);
+    dplot.plotQ2(0.003);
+    dplot.plotQ2(0.01);
+    dplot.plotQ2(0.03);
+    //dplot.plotXpom();
+    */
+
+
+
     //cout << chi2/(190-6) << endl;
     return 0;
 

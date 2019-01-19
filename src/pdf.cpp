@@ -164,6 +164,6 @@ double PDF::evalFitBred(double xpom, double z, double q2) const
     double y = q2/(s-mp2)/x;
 
     double sRed = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
-    return xpom*sRed;
+    return xpom*sRed;// TODO why is it wrong?
    // return sRed;
 }
