@@ -78,7 +78,7 @@ struct dFitter {
     void checkSigma()
     {
         for(auto p : data) {
-            double sRedMy = fitB.evalFitBred(p.xp, p.beta, p.q2);
+            double sRedMy = fitB.evalFitRed(p.xp, p.beta, p.q2);
             cout << p.xp << " "<< p.q2 <<" "<< p.beta <<" : "<< p.xpSig <<" " << sRedMy << endl;
         }
     }
@@ -153,15 +153,33 @@ struct dFitter {
         return chi2;
     }
 
+    int getNpoints()
+    {
+        int s = 0;
+        for(const auto &p : data)
+            s += Cut(p);
+        return s;
+    }
+
     //Calculated according to https://arxiv.org/pdf/hep-ex/0012053.pdf
     //Formula (33), page 29
     double getChi2()
     {
+        /*
         //Fill theory
         for(auto &p : data) {
-           // if(!Cut(p)) continue;
-            p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
+            p.th = fitB.evalFitRed(p.xp, p.beta, p.q2);
         }
+        */
+
+        //q0^2 = 1.75
+        PDF myFitA(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
+        myFitA.evolve();
+        myFitA.initConv();
+        for(auto &p : data) {
+            p.th = myFitA.evalFitRedMy(p.xp, p.beta, p.q2);
+        }
+
 
         TVectorD s = getShifts();
         double chi2 = getChi2(s);
@@ -189,15 +207,10 @@ struct dFitter {
     //Simple naive one
     double getChi2Simply()
     {
-        auto Cut = [](const point &p) {
-            double mx = sqrt(p.q2 * (1/p.beta - 1));
-            return (p.q2 >= 8.5 && p.beta <= 0.8 &&  mx > 2 );
-        };
-
         //Fill theory
         for(auto &p : data) {
             if(!Cut(p)) continue;
-            p.th = fitB.evalFitBred(p.xp, p.beta, p.q2);
+            p.th = fitB.evalFitRed(p.xp, p.beta, p.q2);
         }
 
         //Evaluate the chi2
@@ -227,28 +240,28 @@ int main()
 
     dPlotter dplot;
     dplot.data = dfit.data;
+
+    //dplot.plotPDFs();
+    //return 0;
     dplot.plotBeta(0.0003);
     dplot.plotBeta(0.001);
     dplot.plotBeta(0.003);
     dplot.plotBeta(0.01);
     dplot.plotBeta(0.03);
 
-    /*
     dplot.plotQ2(0.0003);
     dplot.plotQ2(0.001);
     dplot.plotQ2(0.003);
     dplot.plotQ2(0.01);
     dplot.plotQ2(0.03);
     //dplot.plotXpom();
-    */
+
 
 
 
     //cout << chi2/(190-6) << endl;
-    return 0;
-
-
-    dfit.checkSigma();
+    //return 0;
+    //dfit.checkSigma();
 
     double chi2s = dfit.getChi2Simply();
 
@@ -256,7 +269,7 @@ int main()
 
 
 
-    int ndf = 190 - 6;
+    int ndf = dfit.getNpoints() - 6;
     cout << "My chi2 /ndf = " <<  chi2   << " / "<< ndf<<" = " << chi2/ndf << endl;
     cout << "My chi2s/ndf = " <<  chi2s  << " / "<< ndf<<" = " << chi2s/ndf << endl;
     return 0;

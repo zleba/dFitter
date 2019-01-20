@@ -5,7 +5,16 @@
 #include <cmath>
 
 struct PDF {
-    double ag,bg,cg, aq,bq,cq;
+    double ag = -99,bg=-99,cg=-99, aq,bq,cq;
+
+    void setPars(double aG, double bG, double cG, double aQ, double bQ, double cQ)
+    {
+        ag = aG; bg = bG; cg = cG; aq = aQ; bq = bQ; cq = cQ; 
+    }
+
+    PDF(double aG, double bG, double cG, double aQ, double bQ, double cQ) :
+        ag(aG), bg(bG), cg(cG), aq(aQ), bq(bQ), cq(cQ) {}
+    PDF() {}
 
     double xglu(double x) const {
       double pd = ag * std::pow(x,bg) * std::pow((1-x),cg);
@@ -28,9 +37,10 @@ struct PDF {
     std::pair<double,double> eval(double z, double q2) const;
     void initConv();
 
-    std::pair<double,double> evalFitB(double z, double q2) const;
+    static std::pair<double,double> evalFitA(double z, double q2);
 
-    double evalFitBred(double xpom, double z, double q2) const;
+    double evalFitRed(double xpom, double z, double q2) const;
+    double evalFitRedMy(double xpom, double z, double q2) const;
 };
 
 #endif

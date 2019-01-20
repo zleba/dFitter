@@ -10,7 +10,7 @@
 #include <vector>
 #include <map>
 
-
+#include "pdf.h"
 
 
 using namespace PlottingHelper;//pollute the namespace!
@@ -22,6 +22,9 @@ TString rn() {return Form("%d",rand());}
 void dPlotter::plotBeta(double xpom)
 {
     map<double, vector<point>> dataMap;
+
+
+
 
     for(point &p : data)
         if(p.xp == xpom)
@@ -73,7 +76,8 @@ void dPlotter::plotBeta(double xpom)
             gTh->SetPoint(j, points[j].beta, points[j].th);
         }
         gTh->SetLineColor(kBlue);
-        gTh->Draw("l");
+        gTh->SetMarkerColor(kBlue);
+        gTh->Draw("l* same");
 
         DrawLatexUp(-1.3, Form("Q^{2} = %g GeV^{2}", q2));
 
@@ -102,7 +106,7 @@ void dPlotter::plotBeta(double xpom)
 
         ++i;
     }
-    can->SaveAs(Form("plots/xpom%g.pdf", xpom));
+    can->SaveAs(Form("dPlots/xpom%g.pdf", xpom));
 
 }
 
@@ -187,7 +191,8 @@ void dPlotter::plotQ2(double xpom)
             gTh->SetPoint(j, points[j].q2, fac*points[j].th);
         }
         gTh->SetLineColor(kBlue);
-        gTh->Draw("l same");
+        gTh->SetMarkerColor(kBlue);
+        gTh->Draw("l* same");
 
 
         double xT, yT;
@@ -204,7 +209,7 @@ void dPlotter::plotQ2(double xpom)
     DrawLatexUp(1, Form("x_{IP} = %g",xpom), -1, "l");
 
 
-    can->SaveAs(Form("plots/q2%g.pdf", xpom));
+    can->SaveAs(Form("dPlots/q2%g.pdf", xpom));
 
 }
 
@@ -285,7 +290,8 @@ void dPlotter::plotXpom()
             gTh->SetPoint(j, points[j].xp, points[j].th);
         }
         gTh->SetLineColor(kBlue);
-        gTh->Draw("l");
+        gTh->SetMarkerColor(kBlue);
+        gTh->Draw("*l same");
 
 
 
@@ -297,6 +303,88 @@ void dPlotter::plotXpom()
     //DrawLatexUp(-1.3, Form("Q^{2} = %g GeV^{2}", q2));
 
 
-    can->SaveAs("plots/xpomGrid.pdf");
+    can->SaveAs("dPlots/xpomGrid.pdf");
+
+}
+
+
+
+
+
+void dPlotter::plotPDFs()
+{
+    vector<double> q2s = {1.75, 8.5, 20, 90, 800};
+
+
+    //q0^2 = 1.75
+    PDF myFitA(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
+    myFitA.evolve();
+
+
+
+
+    gStyle->SetOptStat(0);
+    TCanvas *can = new TCanvas(rn(),"", 600, 600);
+    SetLeftRight(0.1, 0.1);
+    SetTopBottom(0.1, 0.1);
+
+    double zMin = 4e-3;
+
+    DivideTransparent(group(1, 0.5, 2), group(1, 0, q2s.size()));
+
+    for(int i = 0; i < q2s.size(); ++i) {
+
+        //Fill Graph
+        TGraph *grS = new TGraph();
+        TGraph *grG = new TGraph();
+
+        TGraph *grSmy = new TGraph();
+        TGraph *grGmy = new TGraph();
+
+
+        for(double z = zMin; z < 1; z *= 1.01) {
+            double g, qS;
+            tie(g, qS) =  PDF::evalFitA(z, q2s[i]);
+            //tie(g, qS) =  myFitA.eval(z, q2s[i]);
+            qS *= 6;
+
+            grS->SetPoint(grS->GetN(), z, qS);
+            grG->SetPoint(grG->GetN(), z, g);
+
+            double gMy, qSMy;
+            tie(gMy, qSMy) = myFitA.eval(z, q2s[i]);
+            grSmy->SetPoint(grSmy->GetN(), z, (qSMy*6));
+            grGmy->SetPoint(grGmy->GetN(), z, gMy );
+
+        }
+        grS->SetLineColor(kBlue);
+        grG->SetLineColor(kBlue);
+
+
+        can->cd(2*i + 1);
+        TH1D *hFrS = new TH1D(rn(), "", 1, zMin, 1);
+        hFrS->Draw("axis");
+
+        grS->Draw("l same");
+        grSmy->Draw("l same");
+        GetYaxis()->SetRangeUser(0, 0.27);
+        //GetYaxis()->SetRangeUser(0.9, 1.1);
+        GetYaxis()->SetNdivisions(503);
+        SetFTO({15}, {6}, {1.4, 2.2, 0.4, 3.9});
+        gPad->SetLogx();
+
+        can->cd(2*i + 2);
+        TH1D *hFrG = new TH1D(rn(), "", 1, zMin, 1);
+        hFrG->Draw("axis");
+        grG->Draw("l same");
+        grGmy->Draw("l same");
+        GetYaxis()->SetRangeUser(0, 1.25);
+        //GetYaxis()->SetRangeUser(0.9, 1.1);
+        GetYaxis()->SetNdivisions(503);
+        SetFTO({15}, {6}, {1.4, 2.2, 0.4, 3.9});
+        gPad->SetLogx();
+
+    }
+    can->SaveAs("dPlots/pdfs.pdf");
 
 }
