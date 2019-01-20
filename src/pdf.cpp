@@ -197,6 +197,38 @@ double PDF::evalFitRed(double xpom, double z, double q2) const
 double PDF::evalFitRedMy(double xpom, double z, double q2) const
 {
     //Get F2 and FL
+    int ifit = 1;//FitA
+    double xPqDummy[13];
+    double f2R[2], flR[2], c2R[2], clR[2]; //for pomeron & regeon
+    qcd_2006_(&z,&q2, &ifit, xPqDummy, f2R, flR, c2R, clR);
+
+    //f2 = 2*(2*1./9 + 1.5*4./9) * xPq[7];
+    //fl = 0;
+    //cout << "Radek " <<z<<" "<< q2 <<" | "<<  2*(2*1./9 + 4./9) * xPq[7] <<" "<< f2 << endl;
+
+    //Multiply by flux
+    double t = -1, fluxP, fluxR;
+    int Int = 1;
+
+    //Pomeron
+    int ipom = 1;
+    h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &fluxP);
+
+    //Regeon
+    ipom = 2;
+    h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &fluxR);
+    f2R[1] *= fluxR;
+    flR[1] *= fluxR;
+    c2R[1] *= fluxR;
+    clR[1] *= fluxR;
+
+
+
+
+
+
+
+    //Get F2 and FL
     double pro[] = { 4., 1., 4., 1., 4., 1., 0., 1., 4., 1., 4., 1., 4. };
     for(int i=0; i<13; i++) pro[i] /= 9;
     int ichk = 1;
@@ -208,11 +240,8 @@ double PDF::evalFitRedMy(double xpom, double z, double q2) const
 
 
     //Multiply by flux
-    double t = -1, flux;
-    int ifit = 1, Int = 1, ipom = 1;
-    h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &flux);
-    f2 *= flux;
-    fl *= flux;
+    f2 *= fluxP;
+    fl *= fluxP;
 
     //Get the reduced xSec
 
@@ -224,8 +253,10 @@ double PDF::evalFitRedMy(double xpom, double z, double q2) const
     double x = z*xpom;
     double y = q2/(s-mp2)/x;
 
-    double sRed = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
-    return xpom*sRed;// TODO why is it wrong?
+    double sRedP = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
+    double sRedR = (f2R[1]) - y*y/(1 + pow(1-y,2)) * (flR[1]);
+
+    return xpom*(sRedP+sRedR);// TODO why is it wrong?
    // return sRed;
 }
 

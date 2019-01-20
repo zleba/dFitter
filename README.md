@@ -7,8 +7,9 @@ chi2 /ndf = 157.043 / 184 = 0.853497 (fit A) : org val 158.0154
 chi2 /ndf = 163.366 / 184 = 0.887861 (fit B) : org val 164.5480   
 
 #Check of the evolution
-
-
+Evolution checked.   
+Notice the poor x-grid interpolation in the original H1 2006 fits
 
 
 #Check of the convolution
+TODO

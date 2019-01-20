@@ -166,12 +166,13 @@ struct dFitter {
     {
 
         //Fill theory
+        /*
         for(auto &p : data) {
             p.th = fitB.evalFitRed(p.xp, p.beta, p.q2);
         }
+        */
 
 
-        /*
         //q0^2 = 1.75
         PDF myFitA(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
         myFitA.evolve();
@@ -179,7 +180,6 @@ struct dFitter {
         for(auto &p : data) {
             p.th = myFitA.evalFitRedMy(p.xp, p.beta, p.q2);
         }
-        */
 
 
         TVectorD s = getShifts();
@@ -242,9 +242,11 @@ int main()
     dPlotter dplot;
     dplot.data = dfit.data;
 
+    /*
     dplot.plotPDFs(false);
     dplot.plotPDFs(true);
     return 0;
+    */
     dplot.plotBeta(0.0003);
     dplot.plotBeta(0.001);
     dplot.plotBeta(0.003);
