@@ -138,8 +138,8 @@ std::pair<double,double> PDF::evalFitA(double z, double q2)
 {
     int ifit = 1;
     double xPq[13];
-    double f2, fl, c2, cl;
-    qcd_2006_(&z,&q2, &ifit, xPq, &f2, &fl, &c2, &cl);
+    double f2[2], fl[2], c2[2], cl[2];
+    qcd_2006_(&z,&q2, &ifit, xPq, f2, fl, c2, cl);
     return {xPq[6], xPq[7]};
 }
 
@@ -148,8 +148,8 @@ double PDF::evalFitRed(double xpom, double z, double q2) const
     //Get F2 and FL
     int ifit = 1;//FitA
     double xPq[13];
-    double f2, fl, c2, cl;
-    qcd_2006_(&z,&q2, &ifit, xPq, &f2, &fl, &c2, &cl);
+    double f2[2], fl[2], c2[2], cl[2]; //for pomeron & regeon
+    qcd_2006_(&z,&q2, &ifit, xPq, f2, fl, c2, cl);
 
     //f2 = 2*(2*1./9 + 1.5*4./9) * xPq[7];
     //fl = 0;
@@ -157,12 +157,23 @@ double PDF::evalFitRed(double xpom, double z, double q2) const
 
     //Multiply by flux
     double t = -1, flux;
+
+    //Pomeron
     int Int = 1, ipom = 1;
     h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &flux);
-    f2 *= flux;
-    fl *= flux;
-    c2 *= flux;
-    cl *= flux;
+    f2[0] *= flux;
+    fl[0] *= flux;
+    c2[0] *= flux;
+    cl[0] *= flux;
+
+    //Regeon
+    ipom = 2;
+    h12006flux_(&xpom, &t, &Int, &ifit, &ipom, &flux);
+    f2[1] *= flux;
+    fl[1] *= flux;
+    c2[1] *= flux;
+    cl[1] *= flux;
+
 
 
     //Get the reduced xSec
@@ -175,8 +186,11 @@ double PDF::evalFitRed(double xpom, double z, double q2) const
     double x = z*xpom;
     double y = q2/(s-mp2)/x;
 
-    double sRed = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
-    return xpom*sRed;// TODO why is it wrong?
+    double sRedP = (f2[0]) - y*y/(1 + pow(1-y,2)) * (fl[0]);
+    double sRedR = (f2[1]) - y*y/(1 + pow(1-y,2)) * (fl[1]);
+    double sRedC = (c2[0]) - y*y/(1 + pow(1-y,2)) * (cl[0]); //should not be included
+
+    return xpom*(sRedP+sRedR);
    // return sRed;
 }
 

@@ -4,7 +4,8 @@ SRC = src/dfitter.cpp src/pdf.cpp src/dplotter.cpp
 OBJtmp = $(subst src,obj,${SRC})
 OBJ   = $(subst cpp,o,${OBJtmp})
 
-fitBobj = h1FitB/h12006flux.o h1FitB/qcd_2006.o h1FitB/i_2006_fitb.o h1FitB/i_2006_fita.o 
+H1fitobj = h1pdf2006/h12006flux.o h1pdf2006/qcd_2006.o h1pdf2006/i_2006_fitb.o h1pdf2006/i_2006_fita.o 
+H1fitErrobj = h1pdf2006err/h12006flux.o h1pdf2006err/qcd_2006.o h1pdf2006err/i_2006_fitb.o h1pdf2006err/i_2006_fita.o 
 
 
 #ROOT includes + libraries
@@ -16,7 +17,7 @@ LIBS=-Lqcdnum/lib -lQCDNUM  -Wl,-rpath=qcdnum/lib  -lgfortran  ${ROOTLIBS}  -Wl,
 
 
 
-dfitter: ${OBJ} ${fitBobj}
+dfitter: ${OBJ} ${H1fitobj}
 	g++  $^ ${LIBS}  -o $@
 #libQCDNUM.so.0
 

@@ -36,29 +36,28 @@ struct dFitter {
             dfile >> p.xp >> p.q2 >> p.beta >> p.xpSig;
             dfile >> p.errStat >> p.errSys >> p.errTot >> p.errUnc;
 
-            p.errs.resize(3*(10+1), 0.0);
+            p.errs.resize(2 + 3*10, 0.0); // + 2 normalization parameters
 
+            int sampleID;
             //Adding normalization errs
-            int sh;
-            if(3 < p.q2  && p.q2 < 13.5) {//1997 820GeV MB
-                sh = 0*11;
-                p.errs[sh] = 5.8 + 1.5 + 1.0;
-
+            if (3 < p.q2  && p.q2 < 13.5) {   //1997 820GeV MB SpaCal
+                sampleID = 0;
+                p.errs[0] = sqrt(pow(5.8,2) + pow(1.5,2) + pow(1.0,2)); //in %
             }
-            else if(13.5 < p.q2 && p.q2 < 105) {//1997 820GeV
-                sh = 1*11;
-                p.errs[sh] = 5.8 + 1.5 + 1.0;
+            else if(13.5 < p.q2 && p.q2 < 105) {  //1997 820GeV SpaCal
+                sampleID = 1;
+                p.errs[0] = sqrt(pow(5.8,2) + pow(1.5,2) + pow(1.0,2)); //in %
             }
-            else if(133 < p.q2) {//1999-2000 920GeV
-                sh = 2*11;
-                p.errs[sh] = 7.4 + 1.5 + 1.0;
+            else if(133 < p.q2) {//1999-2000 920GeV LrG
+                sampleID = 2;
+                p.errs[1] = sqrt(pow(7.4,2) + pow(1.5,2) + pow(1.0,2)); //in %
             }
             else
                 assert(0);
                 
             //Adding err shifts
-            for(int i = 1; i <= 10; ++i)
-                dfile >> p.errs[sh+i];
+            for(int i = 0; i < 10; ++i)
+                dfile >> p.errs[2 + sampleID*10+i];
 
             //from % to the rel change
             p.errStat /= 100;
@@ -165,13 +164,14 @@ struct dFitter {
     //Formula (33), page 29
     double getChi2()
     {
-        /*
+
         //Fill theory
         for(auto &p : data) {
             p.th = fitB.evalFitRed(p.xp, p.beta, p.q2);
         }
-        */
 
+
+        /*
         //q0^2 = 1.75
         PDF myFitA(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
         myFitA.evolve();
@@ -179,6 +179,7 @@ struct dFitter {
         for(auto &p : data) {
             p.th = myFitA.evalFitRedMy(p.xp, p.beta, p.q2);
         }
+        */
 
 
         TVectorD s = getShifts();

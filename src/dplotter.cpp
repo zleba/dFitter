@@ -34,9 +34,9 @@ void dPlotter::plotBeta(double xpom)
     //cout << dataMap.size() << endl;
 
     gStyle->SetOptStat(0);
-    TCanvas *can = new TCanvas(rn(),"", 4*200/0.8, nRows*200/0.8);
-    SetLeftRight(0.1, 0.1);
-    SetTopBottom(0.1, 0.1);
+    TCanvas *can = new TCanvas(rn(),"", (1+4)*200, (1+nRows)*200);
+    SetLeftRight(0.5/(1+4), 0.5/(1+4));
+    SetTopBottom(0.5/(1+nRows), 0.5/(1+nRows));
 
     DivideTransparent(group(1, 0, 4), group(1, 0, nRows));
 
