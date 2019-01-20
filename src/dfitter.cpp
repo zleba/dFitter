@@ -242,8 +242,9 @@ int main()
     dPlotter dplot;
     dplot.data = dfit.data;
 
-    //dplot.plotPDFs();
-    //return 0;
+    dplot.plotPDFs(false);
+    dplot.plotPDFs(true);
+    return 0;
     dplot.plotBeta(0.0003);
     dplot.plotBeta(0.001);
     dplot.plotBeta(0.003);

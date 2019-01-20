@@ -228,3 +228,58 @@ double PDF::evalFitRedMy(double xpom, double z, double q2) const
     return xpom*sRed;// TODO why is it wrong?
    // return sRed;
 }
+
+double PDF::checkSumRules() const
+{
+
+    for(double q2 = 1.75; q2 < 1600; q2 *= 1.5) {
+        double xg, xq;
+
+        //Integrate
+        int N = 50000;
+        double yMax = -log(1e-4);
+        double s = 0;
+        for(double i = 0; i <= N; ++i) {
+            double y  = (i+0.)*(yMax/N);
+            double z = min(1.0, exp(-y));
+
+            //tie(xg, xq) = PDF::evalFitA(z, q2);
+            tie(xg, xq) = eval(z, q2);
+            double f = z * (xg + 6*xq);
+            //cout << z <<" "<< f << endl;
+
+            if(i == 0 || i == N)
+                f *= 0.5;
+            s += f;
+        }
+        s *= yMax/N;
+
+        cout <<"Radek " <<  q2 <<" "<< s << endl;
+    }
+}
+
+double PDF::checkSumRulesInput() const
+{
+
+    double xg, xq;
+
+    //Integrate
+    int N = 50000;
+    double yMax = -log(1e-4);
+    double s = 0;
+    for(double i = 0; i <= N; ++i) {
+        double y  = (i+0.)*(yMax/N);
+        double z = min(0.999, exp(-y));
+
+        tie(xg, xq) = eval0(z);
+        double f = z * (xg + 6*xq);
+        //cout << z <<" "<< f << endl;
+
+        if(i == 0 || i == N)
+            f *= 0.5;
+        s += f;
+    }
+    s *= yMax/N;
+
+    cout <<"RadekInput " <<   s << endl;
+}

@@ -311,15 +311,23 @@ void dPlotter::plotXpom()
 
 
 
-void dPlotter::plotPDFs()
+void dPlotter::plotPDFs(bool inLog)
 {
     vector<double> q2s = {1.75, 8.5, 20, 90, 800};
 
 
     //q0^2 = 1.75
-    PDF myFitA(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
-    myFitA.evolve();
+    static PDF myFitA;
+    if(myFitA.ag == -99) { 
+        myFitA.setPars(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
+        myFitA.evolve();
+    }
 
+    /*
+    myFitA.checkSumRulesInput();
+    myFitA.checkSumRules();
+    return;
+    */
 
 
 
@@ -342,7 +350,8 @@ void dPlotter::plotPDFs()
         TGraph *grGmy = new TGraph();
 
 
-        for(double z = zMin; z < 1; z *= 1.01) {
+        for(double z = zMin; z < 1; z *= 1.001) {
+        //for(double z = zMin; z < 1; z += 0.001) {
             double g, qS;
             tie(g, qS) =  PDF::evalFitA(z, q2s[i]);
             //tie(g, qS) =  myFitA.eval(z, q2s[i]);
@@ -371,20 +380,25 @@ void dPlotter::plotPDFs()
         //GetYaxis()->SetRangeUser(0.9, 1.1);
         GetYaxis()->SetNdivisions(503);
         SetFTO({15}, {6}, {1.4, 2.2, 0.4, 3.9});
-        gPad->SetLogx();
+
+        if(inLog) gPad->SetLogx();
 
         can->cd(2*i + 2);
         TH1D *hFrG = new TH1D(rn(), "", 1, zMin, 1);
         hFrG->Draw("axis");
         grG->Draw("l same");
         grGmy->Draw("l same");
-        GetYaxis()->SetRangeUser(0, 1.25);
+        GetYaxis()->SetRangeUser(0, 2.25);
         //GetYaxis()->SetRangeUser(0.9, 1.1);
         GetYaxis()->SetNdivisions(503);
         SetFTO({15}, {6}, {1.4, 2.2, 0.4, 3.9});
-        gPad->SetLogx();
+        if(inLog) gPad->SetLogx();
 
     }
-    can->SaveAs("dPlots/pdfs.pdf");
+
+    if(inLog)
+        can->SaveAs("dPlots/pdfsLog.pdf");
+    else
+        can->SaveAs("dPlots/pdfsLin.pdf");
 
 }

@@ -10,7 +10,7 @@ struct dPlotter {
     void plotBeta(double xpom);
     void plotQ2(double xpom);
     void plotXpom();
-    void plotPDFs();
+    void plotPDFs(bool inLog);
 };
 
 #endif

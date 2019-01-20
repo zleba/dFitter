@@ -29,8 +29,9 @@ struct PDF {
         return exp(-0.01/(1-z));
     }
     std::pair<double,double> eval0(double z) const {
-        double s = sup(z);
-        return {s*xglu(z), s*xq(z)};
+        return PDF::evalFitA(z, 1.75);
+        //double s = sup(z);
+        //return {s*xglu(z), s*xq(z)};
     }
 
     void evolve();
@@ -41,6 +42,10 @@ struct PDF {
 
     double evalFitRed(double xpom, double z, double q2) const;
     double evalFitRedMy(double xpom, double z, double q2) const;
+
+
+    double checkSumRules() const;
+    double checkSumRulesInput() const;
 };
 
 #endif
