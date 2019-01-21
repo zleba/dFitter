@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <iostream>
+#include <cassert>
 #include "QCDNUM/QCDNUM.h"
 
 using namespace std;
@@ -40,7 +41,7 @@ void PDF::evolve()
     //double xmin[] = {1.e-5, 0.2, 0.4, 0.6, 0.75};                                      //x-grid
     int    iwt[] = {1,2,4,8,16}, ng = 1, nxin = 1600, iosp = 2;             //x-grid
     int    nqin = 480;                                           //mu2-grid
-    double qq[] = { 1.75e0, 1600 }, wt[] = { 1e0, 1e0};              //mu2-grid
+    double qq[] = { 1.75e0, 1600.01}, wt[] = { 1e0, 1e0};              //mu2-grid
     double q2c = pow(1.4,2), q2b = pow(4.5,2), q0 = 1.75;                   //thresholds, mu20
     double x = 1e-3, q = 1e3, qmz2 = 8315.25, pdf[13];            //output
 
@@ -76,6 +77,7 @@ void PDF::evolve()
 
     int iq0  = QCDNUM::iqfrmq(q0);                           //start scale
     pdfNow = this;
+    cout << "RADEK evolving evolfg" << endl;
     QCDNUM::evolfg(1,func,def,iq0,eps);                 //evolve all pdf's
 }
 
@@ -90,11 +92,11 @@ pair<double,double> PDF::eval(double z, double q2) const
 }
 
 
-void PDF::initConv()
+void PDF::initConv() const
 {
     //Structure function init
     // Try to read the weight file and create one if that fails
-    string wname = "unpol.wgt";
+    string wname = "weights/unpol.wgt";
     int idmin = 0 ;
     int idmax = 0;
     int nwpdf = 0;
@@ -105,12 +107,17 @@ void PDF::initConv()
         QCDNUM::dmpwgt(1,22,wname);                         //dump weights
     }
 
+    ///////////////////////////////////
+    //Massles part
+    ///////////////////////////////////
+
+
     int nztot, nzuse;
     QCDNUM::zmwords(nztot,nzuse);
     cout << " nztot, nzuse = " <<  nztot << " " << nzuse << endl;
 
     // Try to read the weight file and create one if that fails
-    string zmname = "zmstf.wgt";
+    string zmname = "weights/zmstf.wgt";
     int nwords = 0;
     QCDNUM::zmreadw(22,zmname,nwords,ierr);
     if(ierr != 0) {
@@ -123,8 +130,41 @@ void PDF::initConv()
     QCDNUM::zmwords(nztot,nzuse);
     cout << " nztot, nzuse = " <<  nztot << "  " << nzuse << endl;
 
+    ///////////////////////////////////
+    //HF part
+    ///////////////////////////////////
+    double hqmass[] = { 1.4, 4.5, 0. };
 
+    // Try to read the weight file and create one if that fails
+    string hqname = "weights/hqstf.wgt";
+    double aq2 = 1.;
+    double bq2 = 0.;
+    nwords = 0;
+    QCDNUM::hqreadw(22,hqname,nwords,ierr);
+    cout << "Helenka " << __LINE__ << endl;
+    if(ierr == 0) {
+        double a, b;
+        double qmas[3];
+        QCDNUM::hqparms(qmas,a,b);
+        if(qmas[0] != hqmass[0]) ierr = 1;
+        if(qmas[1] != hqmass[1]) ierr = 1;
+        if(qmas[2] != hqmass[2]) ierr = 1;
+        if(a != aq2)             ierr = 1;
+        if(b != bq2)             ierr = 1;
+    }
+    if(ierr != 0) {
+        cout << "Helenka " << __LINE__ << endl;
+        QCDNUM::hqfillw(3,hqmass,aq2,bq2,nwords);
+        cout << "Helenka " << __LINE__ << endl;
+        QCDNUM::hqdumpw(22,hqname);
+        cout << "Helenka " << __LINE__ << endl;
+    }
+    cout << " QCDNUM: words used = " << nwords << endl;
+    cout << endl;
 
+    int nhtot, nhuse;
+    QCDNUM::hqwords(nhtot,nhuse);
+    cout << " nhtot, nhuse = " <<  nhtot << " " << nhuse << endl;
 
 }
 
@@ -136,9 +176,19 @@ extern "C" {
 
 std::pair<double,double> PDF::evalFitA(double z, double q2)
 {
-    int ifit = 1;
     double xPq[13];
     double f2[2], fl[2], c2[2], cl[2];
+
+    int ifit = 1;
+    static bool isLoaded = false;
+    if(isLoaded) {
+        ifit = 0;
+    }
+    else {
+        ifit = 1;
+        isLoaded = true;
+    }
+
     qcd_2006_(&z,&q2, &ifit, xPq, f2, fl, c2, cl);
     return {xPq[6], xPq[7]};
 }
@@ -234,14 +284,29 @@ double PDF::evalFitRedMy(double xpom, double z, double q2) const
     int ichk = 1;
     double f2, fl;
     double xAr[] = {z};
-    double qAr[] = {q2};
-    QCDNUM::zmstfun(2,pro,xAr,qAr,&f2, 1,ichk);
-    QCDNUM::zmstfun(1,pro,xAr,qAr,&fl, 1,ichk);
+    double q2Ar[] = {q2};
+    QCDNUM::zmstfun(2,pro,xAr,q2Ar,&f2, 1,ichk);
+    QCDNUM::zmstfun(1,pro,xAr,q2Ar,&fl, 1,ichk);
+
+    //Get HF contribution
+    double f2C, f2B, flC, flB;
+    QCDNUM::hqstfun(2, 1,pro,xAr,q2Ar,&f2C,1,ichk);
+    QCDNUM::hqstfun(2,-2,pro,xAr,q2Ar,&f2B,1,ichk); //no check on nf = 4
+    QCDNUM::hqstfun(1, 1,pro,xAr,q2Ar,&flC,1,ichk);
+    QCDNUM::hqstfun(1,-2,pro,xAr,q2Ar,&flB,1,ichk); //no check on nf = 4
+        //cout << q[0] << " " << x[0] << "  " << pr << " " << F2c[0] << " " << F2b[0] << " " << FLc[0] << " " << FLb[0] << endl;
 
 
     //Multiply by flux
-    f2 *= fluxP;
-    fl *= fluxP;
+    f2  *= fluxP;
+    fl  *= fluxP;
+    f2C *= fluxP;
+    f2B *= fluxP;
+    flC *= fluxP;
+    flB *= fluxP;
+
+
+
 
     //Get the reduced xSec
 
@@ -253,12 +318,20 @@ double PDF::evalFitRedMy(double xpom, double z, double q2) const
     double x = z*xpom;
     double y = q2/(s-mp2)/x;
 
-    double sRedP = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
+    double sRedPl = (f2) - y*y/(1 + pow(1-y,2)) * (fl);
+    double sRedPc = (f2C) - y*y/(1 + pow(1-y,2)) * (flC);
+    double sRedPb = (f2B) - y*y/(1 + pow(1-y,2)) * (flB);
+
     double sRedR = (f2R[1]) - y*y/(1 + pow(1-y,2)) * (flR[1]);
 
+    double sRedP = sRedPl + sRedPc + sRedPb; 
     return xpom*(sRedP+sRedR);// TODO why is it wrong?
    // return sRed;
 }
+
+
+
+
 
 double PDF::checkSumRules() const
 {
@@ -313,4 +386,115 @@ double PDF::checkSumRulesInput() const
     s *= yMax/N;
 
     cout <<"RadekInput " <<   s << endl;
+}
+
+
+
+pair<double,double> PDF::getF2FL(double z, double q2, char flavour)
+{
+    int ifit = 1;//FitA
+    static bool isLoaded = false;
+    if(isLoaded) {
+        ifit = 0;
+    }
+    else {
+        ifit = 1;
+        isLoaded = true;
+    }
+
+    //Get F2 and FL
+    double xPqDummy[13];
+    double f2[2], fl[2], c2[2], cl[2]; //for pomeron & regeon
+    qcd_2006_(&z,&q2, &ifit, xPqDummy, f2, fl, c2, cl);
+    //return {f2[0] - c2[0], fl[0] - cl[0]};
+    if(flavour == 'A')
+        return {f2[0], fl[0]};
+    else if(flavour == 'C')
+        return {c2[0], cl[0]};
+    else
+        assert(0);
+}
+
+
+/*
+pair<double,double> PDF::getF2FLmy(double z, double q2) const
+{
+    //Get F2 and FL
+    double pro[] = { 4., 1., 4., 1., 4., 1., 0., 1., 4., 1., 4., 1., 4. };
+    for(int i=0; i<13; i++) pro[i] /= 9;
+    int ichk = 1;
+    double f2, fl;
+    double xAr[] = {z};
+    double q2Ar[] = {q2};
+    QCDNUM::zmstfun(2,pro,xAr,q2Ar,&f2, 1,ichk);
+    QCDNUM::zmstfun(1,pro,xAr,q2Ar,&fl, 1,ichk);
+
+    return {f2, fl};
+}
+*/
+
+
+pair<double,double> PDF::getF2FLmy(double z, double q2, char flavour) const
+{
+    double pro[] = { 4., 1., 4., 1., 4., 1., 0., 1., 4., 1., 4., 1., 4. };
+    for(int i=0; i<13; i++) pro[i] /= 9;
+    int ichk = 1;
+
+    //Get HF contribution
+    double f2, fl;
+
+    double xAr[] = {z};
+    double q2Ar[] = {q2};
+
+    if(flavour == 'L') {
+        QCDNUM::zmstfun(2,pro,xAr,q2Ar,&f2, 1,ichk);
+        QCDNUM::zmstfun(1,pro,xAr,q2Ar,&fl, 1,ichk);
+    }
+    else if(flavour == 'C') { //charm
+        QCDNUM::hqstfun(2, 1,pro,xAr,q2Ar,&f2,1,ichk);
+        QCDNUM::hqstfun(1, 1,pro,xAr,q2Ar,&fl,1,ichk);
+    }
+    else if(flavour == 'B') {
+        QCDNUM::hqstfun(2,-2,pro,xAr,q2Ar,&f2,1,ichk); //no check on nf = 4
+        QCDNUM::hqstfun(1,-2,pro,xAr,q2Ar,&fl,1,ichk); //no check on nf = 4
+    }
+    else 
+        assert(0);
+
+    return {f2, fl};
+
+}
+
+
+
+
+
+
+double PDF::checkConvolution() const
+{
+    initConv();
+
+    cout <<"Radek Table" <<  endl;
+    for(double q2 = 1.75; q2 < 1600; q2 *= 1.5) {
+        //print table
+        int N = 5;
+        double yMax = -log(1e-4);
+        for(double i = 0; i <= N; ++i) {
+            double y  = (i+0.)*(yMax/N);
+            double z = min(1.0, exp(-y));
+
+            double f2, fl;
+            double f2My, flMy;
+            double f2MyC, flMyC;
+            double f2MyB, flMyB;
+            tie(f2, fl) = PDF::getF2FL(z, q2);
+            tie(f2My, flMy) = getF2FLmy(z, q2, 'L');
+            tie(f2MyC, flMyC) = getF2FLmy(z, q2, 'C');
+            tie(f2MyB, flMyB) = getF2FLmy(z, q2, 'B');
+
+            cout <<"RADEK   "<< q2  <<" "<< z <<" : "<< f2 <<" "<< f2My << " | "<< f2My/f2 <<  endl;
+            cout <<"RADEKC  "<< q2  <<" "<< z <<" : "<< f2 <<" "<< f2My << " | "<< (f2My+f2MyC)/f2 <<  endl;
+            cout <<"RADEKCB "<< q2  <<" "<< z <<" : "<< f2 <<" "<< f2My << " | "<< (f2My+f2MyC+f2MyB)/f2 <<  endl;
+        }
+    }
 }

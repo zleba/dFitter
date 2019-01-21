@@ -160,18 +160,14 @@ struct dFitter {
         return s;
     }
 
-    //Calculated according to https://arxiv.org/pdf/hep-ex/0012053.pdf
-    //Formula (33), page 29
-    double getChi2()
+
+    void fillTheory()
     {
-
         //Fill theory
-        /*
-        for(auto &p : data) {
-            p.th = fitB.evalFitRed(p.xp, p.beta, p.q2);
-        }
-        */
 
+        for(auto &p : data) {
+            p.thOrg = fitB.evalFitRed(p.xp, p.beta, p.q2);
+        }
 
         //q0^2 = 1.75
         PDF myFitA(0.14591, 0, -0.94705,    1.0587, 2.2964, 0.56894);
@@ -180,6 +176,17 @@ struct dFitter {
         for(auto &p : data) {
             p.th = myFitA.evalFitRedMy(p.xp, p.beta, p.q2);
         }
+    }
+
+
+
+
+
+    //Calculated according to https://arxiv.org/pdf/hep-ex/0012053.pdf
+    //Formula (33), page 29
+    double getChi2()
+    {
+
 
 
         TVectorD s = getShifts();
@@ -236,22 +243,26 @@ int main()
 {
     dFitter dfit;
     dfit.loadData();
+    dfit.fillTheory();
 
-    double chi2  = dfit.getChi2();
+    double chi2  = 0;//dfit.getChi2();
 
     dPlotter dplot;
     dplot.data = dfit.data;
 
-    /*
-    dplot.plotPDFs(false);
-    dplot.plotPDFs(true);
-    return 0;
-    */
+    //dplot.plotF2FLcharm(true);
+    //dplot.plotF2FL(true);
+
+    //dplot.plotPDFs(false);
+    //dplot.plotPDFs(true);
+    //return 0;
+
     dplot.plotBeta(0.0003);
     dplot.plotBeta(0.001);
     dplot.plotBeta(0.003);
     dplot.plotBeta(0.01);
     dplot.plotBeta(0.03);
+
 
     dplot.plotQ2(0.0003);
     dplot.plotQ2(0.001);
@@ -260,6 +271,7 @@ int main()
     dplot.plotQ2(0.03);
     //dplot.plotXpom();
 
+    return 0;
 
 
 

@@ -24,8 +24,15 @@ dfitter: ${OBJ} ${H1fitobj}
 test:  h1FitB/h12006flux.o h1FitB/qcd_2006.o h1FitB/i_2006_fitb.o h1FitB/i_2006_fita.o  obj/exampleCxx.o
 	g++   $^ ${LIBS} -o $@
 
+hfTest:    obj/exampleHF.o
+	g++   $^ ${LIBS} -o $@
+
+
 obj/%.o: src/%.cpp
 	g++ -c ${INC} $^ -o $@
+
+clean:
+	rm obj/*.o
 
 
 

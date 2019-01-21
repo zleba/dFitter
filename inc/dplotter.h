@@ -11,6 +11,9 @@ struct dPlotter {
     void plotQ2(double xpom);
     void plotXpom();
     void plotPDFs(bool inLog);
+    void plotF2FL(bool inLog);
+    void plotF2FLcharm(bool inLog);
+
 };
 
 #endif

@@ -36,7 +36,7 @@ struct PDF {
 
     void evolve();
     std::pair<double,double> eval(double z, double q2) const;
-    void initConv();
+    void initConv() const;
 
     static std::pair<double,double> evalFitA(double z, double q2);
 
@@ -46,6 +46,12 @@ struct PDF {
 
     double checkSumRules() const;
     double checkSumRulesInput() const;
+
+    static std::pair<double,double> getF2FL(double z, double q2, char flavour = 'A');
+    //std::pair<double,double> getF2FLmy(double z, double q2) const;
+    std::pair<double,double> getF2FLmy(double z, double q2, char flavour = 'L') const;
+    double checkConvolution() const;
+
 };
 
 #endif
