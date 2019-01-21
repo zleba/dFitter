@@ -1,6 +1,6 @@
 Fitting of diffractive data.   
 See:   
-[H1 2006 fit](http://www-h1.desy.de/h1/www/publications/htmlsplit/DESY-06-049.long.poster.html)
+[H1 2006 fit](http://www-h1.desy.de/h1/www/publications/htmlsplit/DESY-06-049.long.poster.html)  
 [QCDnum manual](https://www.nikhef.nl/~h24/qcdnum-files/doc/qcdnum170008.pdf)
 
 # Plan
@@ -37,7 +37,10 @@ The difference observed in F2c and F2l at the higher scales, why?
 ![Convolution check - Total](dPlots/pngPlots/f2flLog.png)
 
 ## Check of the reduced x-sections
-Some deviations visible at the high-q2 region, related to the difference in the charm distribution.
+Some deviations visible at the high-q2 region, related to the difference in the charm distribution.  
+The floowing plots are in the style of H1 2006 paper.
+Blue curve is the published one, whereas the green curve is obtained using software in this repository.
+The initial PDF parametrisation is taken from the paper.  
 
 ![sigmaRed - beta dep.](dPlots/pngPlots/xpom0.0003.png)
 ![sigmaRed - beta dep.](dPlots/pngPlots/xpom0.001.png)
